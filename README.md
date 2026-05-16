@@ -27,3 +27,17 @@ Project based learning initiative; The idea is that with the help of proctored, 
 - Automate any part of the design process
 
 The point of this project is to learn. It is counter inuitive to use AI for this process - the best engineers understand the internals and can guide AI to produce high quality output after rugged experience in the field. AI is an enhancement tool, not a replacement.
+
+### Building the project
+
+```
+cmake -S . -B build      configure: read CMakeLists.txt, generate build files
+cmake --build build      build: actually compile and link
+ctest --test-dir build   run tests
+```
+
+### Project Layout
+
+- The src/ folder is where implementation files live
+- The include/ folder is where the header files live
+- The tests/ folder is where the test harness lives
