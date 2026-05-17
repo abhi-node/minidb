@@ -1,6 +1,7 @@
 #ifndef MINIDB_SCHEMA_H
 #define MINIDB_SCHEMA_H
 
+#include <math.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -11,6 +12,19 @@ typedef enum {
     COLUMN_DECIMAL, // DECIMAL - 8 byte float
     COLUMN_VARCHAR // VARCHAR - 256 byte string of variable length
 } minidb_column_data_t;
+
+typedef struct {
+    minidb_column_data_t type;
+    union {
+        uint32_t id;
+        int32_t integer;
+        double_t decimal;
+        struct {
+            char* data;
+            uint32_t length;
+        } varchar;
+    } data;
+} minidb_data_t;
 
 typedef enum {
     DB_SUCCESS, // on success
@@ -41,12 +55,13 @@ typedef struct {
     size_t capacity; // capacity (treat rows as a dynamic array)
 } minidb_table_t;
 
-
+minidb_row_t create_row(uint32_t count, minidb_data_t *data);
 minidb_column_t create_column(minidb_column_data_t type, char* name);
 minidb_schema_t create_schema(minidb_column_t *cols, uint32_t n_cols);
 minidb_table_t* create_table(minidb_schema_t schema, char* name);
 
 db_status destroy_table(minidb_table_t* table);
+
 
 db_status insert_row(minidb_row_t row, minidb_table_t* table);
 
