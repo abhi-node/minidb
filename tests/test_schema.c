@@ -1,8 +1,7 @@
 #include <assert.h>
 #include "minidb/schema.h"
-#include <stdint.h>
-#include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 void test_insert_and_retrieve(void) {
     minidb_column_t *cols = malloc(3 * sizeof(minidb_column_t));
@@ -41,6 +40,8 @@ void test_insert_and_retrieve(void) {
 
     minidb_row_t row = create_row(3, data);
     db_status err = insert_row(row, table);
+
+    print_rows(table);
 
     destroy_table(table);
 

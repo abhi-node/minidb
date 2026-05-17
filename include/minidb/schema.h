@@ -58,11 +58,11 @@ typedef struct {
 minidb_row_t create_row(uint32_t count, minidb_data_t *data);
 minidb_column_t create_column(minidb_column_data_t type, char* name);
 minidb_schema_t create_schema(minidb_column_t *cols, uint32_t n_cols);
-minidb_table_t* create_table(minidb_schema_t schema, char* name);
 
+minidb_table_t* create_table(minidb_schema_t schema, char* name);
 db_status destroy_table(minidb_table_t* table);
 
-
 db_status insert_row(minidb_row_t row, minidb_table_t* table);
+db_status print_rows(minidb_table_t* table);
 
 #endif
