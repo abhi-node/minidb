@@ -1,35 +1,43 @@
-#ifndef SCHEMA_UTILS_H
-#define SCHEMA_UTILS_H
+#ifndef MINIDB_SCHEMA_H
+#define MINIDB_SCHEMA_H
 
-#include <cstdint>
-#include <cstddef>
+#include <stddef.h>
 
 typedef enum {
-    COLUMN_INT = 0,
+    COLUMN_ID = 0,
+    COLUMN_INT,
     COLUMN_DECIMAL
-} ColumnType;
+} minidb_var_t;
+
+typedef enum {
+    DB_SUCCESS,
+    ERR_INSERT_FAIL,
+    ERR_SELECT_FAIL
+} db_status;
 
 typedef struct {
-    char *name;
-    ColumnType type;
-} Column;
+    const char *name;
+    minidb_var_t type;
+} minidb_column_t;
 
 typedef struct {
-    uint32_t size;
-    Column *cols;
-} Schema;
+    size_t size;
+    size_t offset;
+    minidb_column_t *cols;
+} minidb_schema_t;
 
 typedef struct {
     char *bytes;
-} Tuple;
+} minidb_row_t;
 
 typedef struct {
-    Schema schema;
-    Tuple *rows;
+    minidb_schema_t schema;
+    minidb_row_t *rows;
     size_t n_rows;
     size_t capacity;
-} Table;
+} minidb_table_t;
 
-void create_table();
+db_status create_table(minidb_schema_t schema, minidb_table_t* out_table);
+db_status insert_row(minidb_row_t row, minidb_table_t* table);
 
 #endif
