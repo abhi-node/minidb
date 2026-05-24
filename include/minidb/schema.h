@@ -18,7 +18,7 @@ typedef struct {
     union {
         uint32_t id;
         int32_t integer;
-        double_t decimal;
+        double decimal;
         struct {
             char* data;
             uint32_t length;
@@ -27,10 +27,13 @@ typedef struct {
 } minidb_data_t;
 
 typedef enum {
-    DB_SUCCESS, // on success
-    ERR_INSERT_FAIL, // insertion fail
-    ERR_SELECT_FAIL // select fail
-} db_status;
+    MINIDB_OK, // on success
+    MINIDB_ERR_INSERT_FAIL, // insertion fail
+    MINIDB_ERR_SELECT_FAIL,
+    MINIDB_ERR_SCHEMA_MISMATCH,
+    MINIDB_ERR_MEM_ALLOC_FAIL,
+    MINIDB_ERR_INVALID_CALL
+} minidb_db_status;
 
 typedef struct {
     const char *name; // column name, used for query match - string literal as column name never changes
@@ -55,14 +58,13 @@ typedef struct {
     size_t capacity; // capacity (treat rows as a dynamic array)
 } minidb_table_t;
 
-minidb_row_t create_row(uint32_t count, minidb_data_t *data);
-minidb_column_t create_column(minidb_column_data_t type, char* name);
+minidb_column_t create_column(minidb_column_data_t type, char *name);
 minidb_schema_t create_schema(minidb_column_t *cols, uint32_t n_cols);
 
-minidb_table_t* create_table(minidb_schema_t schema, char* name);
-db_status destroy_table(minidb_table_t* table);
+minidb_table_t* create_table(minidb_schema_t schema, char *name);
+minidb_db_status destroy_table(minidb_table_t *table);
 
-db_status insert_row(minidb_row_t row, minidb_table_t* table);
-db_status print_rows(minidb_table_t* table);
+minidb_db_status insert_row(minidb_data_t *data, size_t n_data, minidb_table_t *table);
+minidb_db_status print_rows(minidb_table_t *table);
 
 #endif
