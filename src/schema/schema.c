@@ -15,18 +15,38 @@ minidb_column_t create_column(minidb_column_data_t type, char *name) {
     return out_col;
 }
 
-minidb_schema_t create_schema(minidb_column_t *cols, size_t n_cols) {
-    minidb_schema_t out_schema;
-    out_schema.cols = cols;
-    out_schema.n_cols = n_cols;
+minidb_db_status create_schema(minidb_column_t *cols, size_t n_cols, minidb_schema_t *out_schema) {
+    for (size_t i = 0; i < n_cols; i++) {
+        for (size_t j = i+1; j < n_cols; j++) {
+            if (strcmp(cols[i].name, cols[j].name) == 0) {
+                return MINIDB_ERR_INVALID_SCHEMA;
+            }
+        }
+    }
+    out_schema->cols = cols;
+    out_schema->n_cols = n_cols;
 
-    return out_schema;
+    return MINIDB_OK;
 }
 
-minidb_table_t* create_table(minidb_schema_t schema, char* name) {
-    minidb_table_t *out_table = malloc(sizeof(minidb_table_t));
+minidb_db_status create_table(minidb_column_data_t* types, char** names, size_t n_cols, char* name, minidb_table_t *out_table) {
+    if (types == NULL || names == NULL || name == NULL || out_table == NULL) {
+        return MINIDB_ERR_INVALID_CALL;
+    }
+    minidb_column_t *cols = malloc(sizeof(minidb_column_t) * n_cols);
+    for (size_t i = 0; i < n_cols; i++) {
+        cols[i] = create_column(types[i], names[i]);
+    }
+
+    minidb_schema_t schema;
+    minidb_db_status schema_status = create_schema(cols, n_cols, &schema);
+
+    if (schema_status != MINIDB_OK) {
+        return schema_status;
+    }
+
     if (out_table == NULL) {
-        return NULL;
+        return MINIDB_ERR_MEM_ALLOC_FAIL;
     }
 
     out_table->schema = schema;
@@ -37,10 +57,10 @@ minidb_table_t* create_table(minidb_schema_t schema, char* name) {
 
     if (out_table->rows == NULL) {
         destroy_table(out_table);
-        return NULL;
+        return MINIDB_ERR_MEM_ALLOC_FAIL;
     }
 
-    return out_table;
+    return MINIDB_OK;
 }
 
 minidb_db_status destroy_table(minidb_table_t* table) {

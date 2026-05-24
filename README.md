@@ -34,6 +34,7 @@ The point of this project is to learn. It is counter inuitive to use AI for this
 cmake -S . -B build      configure: read CMakeLists.txt, generate build files
 cmake --build build      build: actually compile and link
 ctest --test-dir build   run tests
+./build/src/minidb       run entry point to program
 ```
 
 ### Project Layout

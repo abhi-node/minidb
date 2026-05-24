@@ -4,15 +4,20 @@
 #include <stdio.h>
 
 void test_insert_and_retrieve(void) {
-    minidb_column_t *cols = malloc(3 * sizeof(minidb_column_t));
+    minidb_column_data_t *types = malloc(sizeof(minidb_column_data_t)*3);
+    char **names = malloc(sizeof(char*)*3);
 
-    cols[0] = create_column(COLUMN_ID, "id");
-    cols[1] = create_column(COLUMN_INT, "amount");
-    cols[2] = create_column(COLUMN_VARCHAR, "name");
+    types[0] = COLUMN_ID;
+    types[1] = COLUMN_INT;
+    types[2] = COLUMN_VARCHAR;
 
-    minidb_schema_t schema = create_schema(cols, 3);
+    names[0] = "id";
+    names[1] = "amount";
+    names[2] = "name";
 
-    minidb_table_t* table = create_table(schema, "accounts");
+
+    minidb_table_t *table = malloc(sizeof(minidb_table_t));
+    create_table(types, names, 3, "accounts", table);
 
     minidb_data_t data[3];
 
