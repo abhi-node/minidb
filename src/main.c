@@ -16,7 +16,10 @@ int main(void) {
 
 
     minidb_table_t *table = malloc(sizeof(minidb_table_t));
-    create_table(types, names, 3, "accounts", table);
+    minidb_db_status table_status = create_table(types, names, 3, "accounts", table);
+    if (table_status != MINIDB_OK) {
+        return table_status;
+    }
 
     minidb_data_t data[3];
 
