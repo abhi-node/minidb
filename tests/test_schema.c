@@ -6,9 +6,9 @@
 void test_insert_and_retrieve(void) {
     minidb_column_t *cols = malloc(3 * sizeof(minidb_column_t));
 
-    cols[1] = create_column(COLUMN_ID, "id");
-    cols[2] = create_column(COLUMN_INT, "amount");
-    cols[3] = create_column(COLUMN_VARCHAR, "name");
+    cols[0] = create_column(COLUMN_ID, "id");
+    cols[1] = create_column(COLUMN_INT, "amount");
+    cols[2] = create_column(COLUMN_VARCHAR, "name");
 
     minidb_schema_t schema = create_schema(cols, 3);
 
@@ -38,14 +38,13 @@ void test_insert_and_retrieve(void) {
         }
     };
 
-    minidb_row_t row = create_row(3, data);
-    db_status err = insert_row(row, table);
+    minidb_db_status insert_status = insert_row(data, 3, table);
+    assert(insert_status == MINIDB_OK);
 
-    print_rows(table);
+    minidb_db_status print_status = print_rows(table);
+    assert(print_status == MINIDB_OK);
 
     destroy_table(table);
-
-    assert(err == DB_SUCCESS);
 
 }
 

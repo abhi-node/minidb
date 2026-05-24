@@ -37,10 +37,15 @@ int main(void) {
         }
     };
 
-    minidb_row_t row = create_row(3, data);
-    insert_row(row, table);
+    minidb_db_status insert_status = insert_row(data, 3, table);
+    if (insert_status != MINIDB_OK) {
+        return insert_status;
+    }
 
-    print_rows(table);
+    minidb_db_status print_status = print_rows(table);
+    if (print_status != MINIDB_OK) {
+        return print_status;
+    }
 
     destroy_table(table);
 
