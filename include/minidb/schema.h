@@ -1,7 +1,6 @@
 #ifndef MINIDB_SCHEMA_H
 #define MINIDB_SCHEMA_H
 
-#include <math.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -41,12 +40,12 @@ typedef struct {
 } minidb_column_t;
 
 typedef struct {
-    uint32_t n_cols; // number of cols
+    size_t n_cols; // number of cols
     minidb_column_t *cols; // raw col structs
 } minidb_schema_t;
 
 typedef struct {
-    uint8_t *bytes; // raw bytes of data
+    char *bytes; // raw bytes of data
     size_t size; // size represented by row (variable due to varchar)
 } minidb_row_t;
 
@@ -59,7 +58,7 @@ typedef struct {
 } minidb_table_t;
 
 minidb_column_t create_column(minidb_column_data_t type, char *name);
-minidb_schema_t create_schema(minidb_column_t *cols, uint32_t n_cols);
+minidb_schema_t create_schema(minidb_column_t *cols, size_t n_cols);
 
 minidb_table_t* create_table(minidb_schema_t schema, char *name);
 minidb_db_status destroy_table(minidb_table_t *table);

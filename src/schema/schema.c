@@ -15,7 +15,7 @@ minidb_column_t create_column(minidb_column_data_t type, char *name) {
     return out_col;
 }
 
-minidb_schema_t create_schema(minidb_column_t *cols, uint32_t n_cols) {
+minidb_schema_t create_schema(minidb_column_t *cols, size_t n_cols) {
     minidb_schema_t out_schema;
     out_schema.cols = cols;
     out_schema.n_cols = n_cols;
