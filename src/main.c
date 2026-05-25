@@ -50,11 +50,6 @@ int main(void) {
         return insert_status;
     }
 
-    minidb_db_status print_status = print_rows(table);
-    if (print_status != MINIDB_OK) {
-        return print_status;
-    }
-
     destroy_table(table);
 
 }

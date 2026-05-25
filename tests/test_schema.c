@@ -46,9 +46,6 @@ void test_insert_and_retrieve(void) {
     minidb_db_status insert_status = insert_row(data, 3, table);
     assert(insert_status == MINIDB_OK);
 
-    minidb_db_status print_status = print_rows(table);
-    assert(print_status == MINIDB_OK);
-
     destroy_table(table);
 
 }

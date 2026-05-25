@@ -149,63 +149,64 @@ minidb_db_status create_row(minidb_schema_t schema, minidb_data_t *data, minidb_
     return MINIDB_OK;
 }
 
-minidb_db_status print_row(uint32_t row_index, minidb_table_t *table) {
+minidb_db_status inflow_row_data(size_t row_index, minidb_table_t *table, minidb_structured_row_t *out_data) {
     size_t offset = 0;
-    for (uint32_t i = 0; i < table->schema.n_cols; i++) {
+    for (size_t i = 0; i < table->schema.n_cols; i++) {
         switch (table->schema.cols[i].type) {
             case COLUMN_ID:  {
-                uint32_t id;
-                memcpy(&id, table->rows[row_index].bytes + offset, sizeof(uint32_t));
-                printf("%d\t", id);
+                memcpy(&(out_data->data[i].data.id), table->rows[row_index].bytes + offset, sizeof(uint32_t));
                 offset+=sizeof(uint32_t);
                 break;
             }
             case COLUMN_INT: {
-                int32_t integer;
-                memcpy(&integer, table->rows[row_index].bytes + offset, sizeof(int32_t));
-                printf("%d\t", integer);
+                memcpy(&(out_data->data[i].data.integer), table->rows[row_index].bytes + offset, sizeof(int32_t));
                 offset+=sizeof(int32_t);
                 break;
             }
             case COLUMN_DECIMAL: {
-                double decimal;
-                memcpy(&decimal, table->rows[row_index].bytes + offset, sizeof(double));
-                printf("%0.2f\t", decimal);
+                memcpy(&(out_data->data[i].data.decimal), table->rows[row_index].bytes + offset, sizeof(double));
                 offset+=sizeof(double);
                 break;
             }
             case COLUMN_VARCHAR: {
-                uint32_t length;
-                memcpy(&length, table->rows[row_index].bytes + offset, sizeof(uint32_t));
-                offset+=sizeof(uint32_t);
+                memcpy(&(out_data->data[i].data.varchar.length), table->rows[row_index].bytes + offset, sizeof(size_t));
+                offset+=sizeof(size_t);
 
-                char* data = malloc(length * sizeof(char));
-                if (data == NULL) {
+                out_data->data[i].data.varchar.data = malloc(out_data->data[i].data.varchar.length * sizeof(char));
+                if (out_data->data[i].data.varchar.data == NULL) {
                     return MINIDB_ERR_MEM_ALLOC_FAIL;
                 }
-                memcpy(data, table->rows[row_index].bytes + offset, length * sizeof(char));
-                printf("%.*s\t", length, data);
-                offset+=length*sizeof(char);
-                free(data);
+                memcpy(&(out_data->data[i].data.varchar.data), table->rows[row_index].bytes + offset, out_data->data[i].data.varchar.length * sizeof(char));
+                offset+=out_data->data[i].data.varchar.length*sizeof(char);
                 break;
             }
         }
     }
 
-    printf("\n");
-
     return MINIDB_OK;
 }
 
-minidb_db_status print_rows(minidb_table_t *table) {
-    for (uint32_t i = 0; i < table->n_rows; i++) {
-        minidb_db_status print_status = print_row(i, table);
-        if (print_status != MINIDB_OK) {
-            return print_status;
+minidb_db_status select_all_rows(minidb_table_t *table, minidb_structured_row_t **out_data, size_t *out_size) {
+    if (table == NULL || out_data == NULL || out_size == NULL) {
+        return MINIDB_ERR_INVALID_CALL;
+    }
+
+    *out_size = table->n_rows;
+
+    *out_data = malloc(sizeof(minidb_structured_row_t)*(*out_size));
+    if ((*out_data) == NULL) {
+        return MINIDB_ERR_MEM_ALLOC_FAIL;
+    }
+
+    for (size_t i = 0; i < (*out_size); i++) {
+        minidb_db_status inflow_status = inflow_row_data(i, table, &(*out_data)[i]);
+        if (inflow_status == MINIDB_ERR_INVALID_CALL) {
+            return inflow_status;
         }
     }
 
     return MINIDB_OK;
+
 }
 
 minidb_db_status insert_row(minidb_data_t *data, size_t n_data, minidb_table_t *table){

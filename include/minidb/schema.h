@@ -20,7 +20,7 @@ typedef struct {
         double decimal;
         struct {
             char* data;
-            uint32_t length;
+            size_t length;
         } varchar;
     } data;
 } minidb_data_t;
@@ -51,6 +51,11 @@ typedef struct {
 } minidb_row_t;
 
 typedef struct {
+    minidb_data_t *data;
+    size_t n_cols;
+} minidb_structured_row_t;
+
+typedef struct {
     minidb_schema_t schema; // table schema
     minidb_row_t *rows; // raw rows
     const char* name; // name literal
@@ -63,6 +68,10 @@ minidb_db_status create_table(minidb_column_data_t* types, char** names, size_t 
 minidb_db_status destroy_table(minidb_table_t *table);
 
 minidb_db_status insert_row(minidb_data_t *data, size_t n_data, minidb_table_t *table);
-minidb_db_status print_rows(minidb_table_t *table);
+
+
+minidb_db_status select_all_rows(minidb_table_t *table, minidb_structured_row_t **rows, size_t *out_size);
+minidb_db_status select_rows(minidb_table_t *table);
+minidb_db_status select_where_rows(minidb_table_t *table);
 
 #endif
