@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define VARCHAR_SIZE 256
+
 // Represents column data types
 typedef enum {
     COLUMN_ID = 0, // ID - required 4 byte integer id, configured by system

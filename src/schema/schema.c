@@ -134,7 +134,7 @@ minidb_db_status create_row(minidb_schema_t schema, minidb_data_t *data, minidb_
                 break;
             }
             case COLUMN_VARCHAR: {
-                if (data[i].data.varchar.length > 256) {
+                if (data[i].data.varchar.length > VARCHAR_SIZE) {
                     return MINIDB_ERR_SCHEMA_MISMATCH;
                 }
                 memcpy(out_row->bytes+offset, &(data[i].data.varchar.length), sizeof(uint32_t));
