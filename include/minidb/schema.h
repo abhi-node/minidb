@@ -72,8 +72,8 @@ minidb_db_status destroy_table(minidb_table_t *table);
 minidb_db_status insert_row(minidb_data_t *data, size_t n_data, minidb_table_t *table);
 
 
-minidb_db_status select_all_rows(minidb_table_t *table, minidb_structured_row_t **rows, size_t *out_size);
-minidb_db_status select_rows(minidb_table_t *table);
+minidb_db_status select_all_rows(minidb_table_t *table, minidb_structured_row_t **out_data, size_t *out_size);
+minidb_db_status select_rows(minidb_table_t *table, char** names, size_t n_cols, minidb_structured_row_t **out_data, size_t *out_size);
 minidb_db_status select_where_rows(minidb_table_t *table);
 
 #endif

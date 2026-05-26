@@ -50,12 +50,23 @@ void test_insert_and_retrieve(void) {
     minidb_structured_row_t *out_data;
     size_t out_size;
 
-    minidb_db_status select_status = select_all_rows(table, &out_data, &out_size);
+    // minidb_db_status select_status = select_all_rows(table, &out_data, &out_size);
+    // assert(select_status == MINIDB_OK);
+
+    // assert(out_data->data[0].data.id == 0);
+    // assert(out_data->data[1].data.integer == 100);
+    // assert(strcmp(out_data->data[2].data.varchar.data, "Abhijith")==0);
+
+
+    char *col_names[] = {"id", "name"};
+
+    minidb_db_status select_status = select_rows(table, col_names, 2, &out_data, &out_size);
     assert(select_status == MINIDB_OK);
 
     assert(out_data->data[0].data.id == 0);
-    assert(out_data->data[1].data.integer == 100);
-    assert(strcmp(out_data->data[2].data.varchar.data, "Abhijith")==0);
+    assert(strcmp(out_data->data[1].data.varchar.data, "Abhijith")==0);
+
+
 
     destroy_table(table);
 
