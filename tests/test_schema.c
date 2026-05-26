@@ -1,6 +1,8 @@
 #include <assert.h>
 #include "minidb/schema.h"
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 void test_insert_and_retrieve(void) {
     minidb_column_data_t *types = malloc(sizeof(minidb_column_data_t)*3);
@@ -45,6 +47,16 @@ void test_insert_and_retrieve(void) {
 
     minidb_db_status insert_status = insert_row(data, 3, table);
     assert(insert_status == MINIDB_OK);
+
+    minidb_structured_row_t *out_data;
+    size_t out_size;
+
+    minidb_db_status select_status = select_all_rows(table, &out_data, &out_size);
+    assert(select_status == MINIDB_OK);
+
+    assert(out_data->data[0].data.id == 0);
+    assert(out_data->data[1].data.integer == 100);
+    assert(strcmp(out_data->data[2].data.varchar.data, "Abhijith")==0);
 
     destroy_table(table);
 

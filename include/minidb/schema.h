@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define VARCHAR_SIZE 256
+#define VARCHAR_MAX_SIZE 256
 
 // Represents column data types
 typedef enum {

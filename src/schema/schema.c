@@ -76,9 +76,9 @@ minidb_db_status destroy_table(minidb_table_t* table) {
     return MINIDB_OK;
 }
 
-size_t get_data_size(uint32_t count, minidb_data_t *data) {
+size_t get_data_size(size_t count, minidb_data_t *data) {
     size_t size = 0;
-    for (uint32_t i = 0; i < count; i++) {
+    for (size_t i = 0; i < count; i++) {
         switch (data[i].type) {
             case COLUMN_ID: {
                 size+=sizeof(uint32_t);
@@ -93,7 +93,7 @@ size_t get_data_size(uint32_t count, minidb_data_t *data) {
                 break;
             }
             case COLUMN_VARCHAR: {
-                size+=sizeof(uint32_t);
+                size+=sizeof(size_t);
                 size+= data[i].data.varchar.length*sizeof(char);
                 break;
             }
@@ -113,7 +113,7 @@ minidb_db_status create_row(minidb_schema_t schema, minidb_data_t *data, minidb_
         return MINIDB_ERR_MEM_ALLOC_FAIL;
     }
 
-    for (uint32_t i = 0; i < schema.n_cols; i++) {
+    for (size_t i = 0; i < schema.n_cols; i++) {
         if (data[i].type != schema.cols[i].type) {
             return MINIDB_ERR_SCHEMA_MISMATCH;
         }
@@ -134,11 +134,11 @@ minidb_db_status create_row(minidb_schema_t schema, minidb_data_t *data, minidb_
                 break;
             }
             case COLUMN_VARCHAR: {
-                if (data[i].data.varchar.length > VARCHAR_SIZE) {
+                if (data[i].data.varchar.length > VARCHAR_MAX_SIZE) {
                     return MINIDB_ERR_SCHEMA_MISMATCH;
                 }
-                memcpy(out_row->bytes+offset, &(data[i].data.varchar.length), sizeof(uint32_t));
-                offset+=sizeof(uint32_t);
+                memcpy(out_row->bytes+offset, &(data[i].data.varchar.length), sizeof(size_t));
+                offset+=sizeof(size_t);
                 memcpy(out_row->bytes+offset, (data[i].data.varchar.data), data[i].data.varchar.length*sizeof(char));
                 offset+=data[i].data.varchar.length*sizeof(char);
                 break;
@@ -151,6 +151,9 @@ minidb_db_status create_row(minidb_schema_t schema, minidb_data_t *data, minidb_
 
 minidb_db_status inflow_row_data(size_t row_index, minidb_table_t *table, minidb_structured_row_t *out_data) {
     size_t offset = 0;
+
+    out_data->data = malloc(sizeof(minidb_data_t) * table->schema.n_cols);
+    out_data->n_cols = table->schema.n_cols;
     for (size_t i = 0; i < table->schema.n_cols; i++) {
         switch (table->schema.cols[i].type) {
             case COLUMN_ID:  {
@@ -172,11 +175,11 @@ minidb_db_status inflow_row_data(size_t row_index, minidb_table_t *table, minidb
                 memcpy(&(out_data->data[i].data.varchar.length), table->rows[row_index].bytes + offset, sizeof(size_t));
                 offset+=sizeof(size_t);
 
-                out_data->data[i].data.varchar.data = malloc(out_data->data[i].data.varchar.length * sizeof(char));
+                out_data->data[i].data.varchar.data = malloc((out_data->data[i].data.varchar.length) * sizeof(char));
                 if (out_data->data[i].data.varchar.data == NULL) {
                     return MINIDB_ERR_MEM_ALLOC_FAIL;
                 }
-                memcpy(&(out_data->data[i].data.varchar.data), table->rows[row_index].bytes + offset, out_data->data[i].data.varchar.length * sizeof(char));
+                memcpy((out_data->data[i].data.varchar.data), table->rows[row_index].bytes + offset, (out_data->data[i].data.varchar.length) * sizeof(char));
                 offset+=out_data->data[i].data.varchar.length*sizeof(char);
                 break;
             }
@@ -200,7 +203,7 @@ minidb_db_status select_all_rows(minidb_table_t *table, minidb_structured_row_t 
 
     for (size_t i = 0; i < (*out_size); i++) {
         minidb_db_status inflow_status = inflow_row_data(i, table, &(*out_data)[i]);
-        if (inflow_status == MINIDB_ERR_INVALID_CALL) {
+        if (inflow_status != MINIDB_OK) {
             return inflow_status;
         }
     }
