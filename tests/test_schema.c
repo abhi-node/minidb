@@ -2,7 +2,6 @@
 #include "minidb/schema.h"
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 void test_insert_and_retrieve(void) {
     minidb_column_data_t *types = malloc(sizeof(minidb_column_data_t)*3);
