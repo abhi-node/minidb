@@ -1,5 +1,7 @@
 #include "minidb/schema.h"
 #include <stdlib.h>
+#include <assert.h>
+#include <stdio.h>
 
 
 int main(void) {
@@ -17,9 +19,7 @@ int main(void) {
 
     minidb_table_t *table = malloc(sizeof(minidb_table_t));
     minidb_db_status table_status = create_table(types, names, 3, "accounts", table);
-    if (table_status != MINIDB_OK) {
-        return table_status;
-    }
+    assert(table_status == MINIDB_OK);
 
     minidb_data_t data[3];
 
@@ -46,10 +46,18 @@ int main(void) {
     };
 
     minidb_db_status insert_status = insert_row(data, 3, table);
-    if (insert_status != MINIDB_OK) {
-        return insert_status;
-    }
+    assert(insert_status == MINIDB_OK);
+
+    minidb_structured_row_t out_data;
+
+    minidb_operator_t scan_op = make_scan(table);
+    scan_open(&scan_op);
+    scan_next(&scan_op, &out_data);
+    scan_close(&scan_op);
+
+    printf("%s", out_data.data[2].data.varchar.data);
 
     destroy_table(table);
 
+    return 0;
 }

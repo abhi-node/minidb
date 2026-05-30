@@ -149,59 +149,6 @@ minidb_db_status create_row(minidb_schema_t schema, minidb_data_t *data, minidb_
 
     return MINIDB_OK;
 }
-
-minidb_db_status inflow_row_data(size_t row_index, size_t size, bool *col_indexes, minidb_table_t *table, minidb_structured_row_t *out_data) {
-    size_t offset = 0;
-
-    out_data->data = malloc(sizeof(minidb_data_t) * size);
-    if (out_data->data == NULL) {
-        return MINIDB_ERR_MEM_ALLOC_FAIL;
-    }
-    size_t out_idx = 0;
-
-    out_data->n_cols = table->schema.n_cols;
-    for (size_t i = 0; i < table->schema.n_cols; i++) {
-        switch (table->schema.cols[i].type) {
-            case COLUMN_ID:  {
-                if (col_indexes[i]) memcpy(&(out_data->data[out_idx].data.id), table->rows[row_index].bytes + offset, sizeof(uint32_t));
-                offset+=sizeof(uint32_t);
-                break;
-            }
-            case COLUMN_INT: {
-                if (col_indexes[i]) memcpy(&(out_data->data[out_idx].data.integer), table->rows[row_index].bytes + offset, sizeof(int32_t));
-                offset+=sizeof(int32_t);
-                break;
-            }
-            case COLUMN_DECIMAL: {
-                if (col_indexes[i]) memcpy(&(out_data->data[out_idx].data.decimal), table->rows[row_index].bytes + offset, sizeof(double));
-                offset+=sizeof(double);
-                break;
-            }
-            case COLUMN_VARCHAR: {
-                size_t str_len;
-                memcpy(&str_len, table->rows[row_index].bytes + offset, sizeof(size_t));
-                offset+=sizeof(size_t);
-
-                if (col_indexes[i]) {
-                    out_data->data[out_idx].data.varchar.length = str_len;
-                    out_data->data[out_idx].data.varchar.data = malloc(str_len * sizeof(char));
-                    if (out_data->data[out_idx].data.varchar.data == NULL) {
-                        return MINIDB_ERR_MEM_ALLOC_FAIL;
-                    }
-                    memcpy((out_data->data[out_idx].data.varchar.data), table->rows[row_index].bytes + offset, str_len * sizeof(char));
-                }
-                offset+=str_len*sizeof(char);
-
-                break;
-            }
-        }
-
-        if (col_indexes[i]) out_idx++;
-    }
-
-    return MINIDB_OK;
-}
-
 minidb_db_status insert_row(minidb_data_t *data, size_t n_data, minidb_table_t *table){
     if (data == NULL || table == NULL) {
         return MINIDB_ERR_INVALID_CALL;
@@ -233,72 +180,77 @@ minidb_db_status insert_row(minidb_data_t *data, size_t n_data, minidb_table_t *
     return MINIDB_OK;
 }
 
-minidb_db_status select_all_rows(minidb_table_t *table, minidb_structured_row_t **out_data, size_t *out_size) {
-    if (table == NULL || out_data == NULL || out_size == NULL) {
+minidb_operator_t make_scan(minidb_table_t *table) {
+    minidb_scan_state_t *state = malloc(sizeof(minidb_scan_state_t));
+
+    state->table = table;
+    state->cursor = 0;
+
+    minidb_operator_t op;
+    op.open = scan_open;
+    op.close = scan_close;
+    op.next = scan_next;
+    op.state = state;
+
+    return op;
+}
+
+void scan_open(minidb_operator_t *op) {
+    minidb_scan_state_t *state = op->state;
+    state->cursor = 0;
+}
+
+minidb_db_status scan_next(minidb_operator_t *op, minidb_structured_row_t *out_row) {
+    if (op == NULL) {
         return MINIDB_ERR_INVALID_CALL;
     }
 
-    *out_size = table->n_rows;
+    minidb_scan_state_t *state = op->state;
 
-    bool col_indexes[table->schema.n_cols];
-    memset(col_indexes, true, table->schema.n_cols * sizeof(size_t));
+    if (state->cursor >= state->table->n_rows) {
+        return MINIDB_ERR_ROWS_EXHAUSTED;
+    }
 
-    *out_data = malloc(sizeof(minidb_structured_row_t)*(*out_size));
-    if ((*out_data) == NULL) {
+    size_t offset = 0;
+    out_row->data = malloc(sizeof(minidb_data_t) * state->table->schema.n_cols);
+    if (out_row->data == NULL) {
         return MINIDB_ERR_MEM_ALLOC_FAIL;
     }
 
-    for (size_t i = 0; i < (*out_size); i++) {
-        minidb_db_status inflow_status = inflow_row_data(i, table->schema.n_cols, col_indexes,table, &(*out_data)[i]);
-        if (inflow_status != MINIDB_OK) {
-            return inflow_status;
-        }
-    }
-
-    return MINIDB_OK;
-
-}
-
-minidb_db_status select_rows(minidb_table_t *table, char **names, size_t n_cols, minidb_structured_row_t **out_data, size_t *out_size) {
-    if (table == NULL || out_data == NULL || out_size == NULL || names == NULL) {
-        return MINIDB_ERR_INVALID_CALL;
-    }
-
-    bool similar[n_cols];
-    memset(similar, false, n_cols * sizeof(int32_t));
-
-    bool col_indexes[table->schema.n_cols];
-    memset(col_indexes, false, n_cols * sizeof(size_t));
-
-    for (size_t i = 0; i < table->schema.n_cols; i++) {
-        for (size_t j = 0; j < n_cols; j++) {
-            if (strcmp(table->schema.cols[i].name, names[j]) == 0) {
-                similar[j]=true;
-                col_indexes[i]=true;
+    out_row->n_cols = state->table->schema.n_cols;
+    for (size_t i = 0; i < state->table->schema.n_cols; i++) {
+        switch (state->table->schema.cols[i].type) {
+            case COLUMN_ID:  {
+                memcpy(&(out_row->data[i].data.id), state->table->rows[state->cursor].bytes + offset, sizeof(uint32_t));
+                offset+=sizeof(uint32_t);
+                break;
+            }
+            case COLUMN_INT: {
+                memcpy(&(out_row->data[i].data.integer), state->table->rows[state->cursor].bytes + offset, sizeof(int32_t));
+                offset+=sizeof(int32_t);
+                break;
+            }
+            case COLUMN_DECIMAL: {
+                memcpy(&(out_row->data[i].data.decimal), state->table->rows[state->cursor].bytes + offset, sizeof(double));
+                offset+=sizeof(double);
+                break;
+            }
+            case COLUMN_VARCHAR: {
+                memcpy(&out_row->data[i].data.varchar.length , state->table->rows[state->cursor].bytes + offset, sizeof(size_t));
+                offset+=sizeof(size_t);
+                out_row->data[i].data.varchar.data = malloc(out_row->data[i].data.varchar.length * sizeof(char) + 1);
+                if (out_row->data[i].data.varchar.data == NULL) {
+                    return MINIDB_ERR_MEM_ALLOC_FAIL;
+                }
+                memcpy((out_row->data[i].data.varchar.data), state->table->rows[state->cursor].bytes + offset, out_row->data[i].data.varchar.length * sizeof(char));
+                offset+=out_row->data[i].data.varchar.length*sizeof(char);
+                break;
             }
         }
     }
 
-    for (size_t i = 0; i < n_cols; i++) {
-        if (!similar[i]) {
-            return MINIDB_ERR_SCHEMA_MISMATCH;
-        }
-    }
-
-    *out_size = table->n_rows;
-
-    *out_data = malloc(sizeof(minidb_structured_row_t)*(*out_size));
-    if ((*out_data) == NULL) {
-        return MINIDB_ERR_MEM_ALLOC_FAIL;
-    }
-
-    for (size_t i = 0; i < (*out_size); i++) {
-        minidb_db_status inflow_status = inflow_row_data(i, n_cols, col_indexes, table, &(*out_data)[i]);
-        if (inflow_status != MINIDB_OK) {
-            return inflow_status;
-        }
-    }
-
+    state->cursor++;
     return MINIDB_OK;
-
 }
+
+void scan_close(minidb_operator_t *op) {}

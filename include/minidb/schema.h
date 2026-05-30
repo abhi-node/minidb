@@ -6,12 +6,11 @@
 
 #define VARCHAR_MAX_SIZE 256
 
-// Represents column data types
 typedef enum {
-    COLUMN_ID = 0, // ID - required 4 byte integer id, configured by system
-    COLUMN_INT, // INT - 4 byte integer
-    COLUMN_DECIMAL, // DECIMAL - 8 byte float
-    COLUMN_VARCHAR // VARCHAR - 256 byte string of variable length
+    COLUMN_ID = 0,
+    COLUMN_INT,
+    COLUMN_DECIMAL,
+    COLUMN_VARCHAR
 } minidb_column_data_t;
 
 typedef struct {
@@ -28,28 +27,29 @@ typedef struct {
 } minidb_data_t;
 
 typedef enum {
-    MINIDB_OK, // on success
-    MINIDB_ERR_INSERT_FAIL, // insertion fail
+    MINIDB_OK,
+    MINIDB_ERR_INSERT_FAIL,
     MINIDB_ERR_SELECT_FAIL,
     MINIDB_ERR_SCHEMA_MISMATCH,
     MINIDB_ERR_MEM_ALLOC_FAIL,
     MINIDB_ERR_INVALID_CALL,
-    MINIDB_ERR_INVALID_SCHEMA
+    MINIDB_ERR_INVALID_SCHEMA,
+    MINIDB_ERR_ROWS_EXHAUSTED
 } minidb_db_status;
 
 typedef struct {
-    const char *name; // column name, used for query match - string literal as column name never changes
-    minidb_column_data_t type; // column type, used for offset/size calculation
+    const char *name;
+    minidb_column_data_t type;
 } minidb_column_t;
 
 typedef struct {
-    size_t n_cols; // number of cols
-    minidb_column_t *cols; // raw col structs
+    size_t n_cols;
+    minidb_column_t *cols;
 } minidb_schema_t;
 
 typedef struct {
-    char *bytes; // raw bytes of data
-    size_t size; // size represented by row (variable due to varchar)
+    char *bytes;
+    size_t size;
 } minidb_row_t;
 
 typedef struct {
@@ -58,12 +58,29 @@ typedef struct {
 } minidb_structured_row_t;
 
 typedef struct {
-    minidb_schema_t schema; // table schema
-    minidb_row_t *rows; // raw rows
-    const char* name; // name literal
-    size_t n_rows; // row number
-    size_t capacity; // capacity (treat rows as a dynamic array)
+    minidb_schema_t schema;
+    minidb_row_t *rows;
+    const char* name;
+    size_t n_rows;
+    size_t capacity;
 } minidb_table_t;
+
+
+
+typedef struct minidb_operator_t minidb_operator_t;
+
+struct minidb_operator_t {
+    void (*open)(minidb_operator_t *op);
+    void (*close)(minidb_operator_t *op);
+    minidb_db_status (*next)(minidb_operator_t *op, minidb_structured_row_t *out_row);
+
+    void* state;
+};
+
+typedef struct {
+    minidb_table_t *table;
+    size_t cursor;
+} minidb_scan_state_t;
 
 
 minidb_db_status create_table(minidb_column_data_t* types, char** names, size_t n_cols, char* name, minidb_table_t *out_table);
@@ -71,9 +88,13 @@ minidb_db_status destroy_table(minidb_table_t *table);
 
 minidb_db_status insert_row(minidb_data_t *data, size_t n_data, minidb_table_t *table);
 
+void scan_open(minidb_operator_t *op);
+void scan_close(minidb_operator_t *op);
+minidb_db_status scan_next(minidb_operator_t *op, minidb_structured_row_t *out_row);
+minidb_operator_t make_scan(minidb_table_t *table);
 
-minidb_db_status select_all_rows(minidb_table_t *table, minidb_structured_row_t **out_data, size_t *out_size);
-minidb_db_status select_rows(minidb_table_t *table, char** names, size_t n_cols, minidb_structured_row_t **out_data, size_t *out_size);
-minidb_db_status select_where_rows(minidb_table_t *table);
+
+/*TODO: Create expression types and expression evaluate function */
+/*TODO: Create filter operator functions */
 
 #endif

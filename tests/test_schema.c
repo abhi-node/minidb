@@ -47,26 +47,14 @@ void test_insert_and_retrieve(void) {
     minidb_db_status insert_status = insert_row(data, 3, table);
     assert(insert_status == MINIDB_OK);
 
-    minidb_structured_row_t *out_data;
-    size_t out_size;
+    minidb_structured_row_t out_data;
 
-    // minidb_db_status select_status = select_all_rows(table, &out_data, &out_size);
-    // assert(select_status == MINIDB_OK);
+    minidb_operator_t scan_op = make_scan(table);
+    scan_open(&scan_op);
+    scan_next(&scan_op, &out_data);
+    scan_close(&scan_op);
 
-    // assert(out_data->data[0].data.id == 0);
-    // assert(out_data->data[1].data.integer == 100);
-    // assert(strcmp(out_data->data[2].data.varchar.data, "Abhijith")==0);
-
-
-    char *col_names[] = {"id", "name"};
-
-    minidb_db_status select_status = select_rows(table, col_names, 2, &out_data, &out_size);
-    assert(select_status == MINIDB_OK);
-
-    assert(out_data->data[0].data.id == 0);
-    assert(strcmp(out_data->data[1].data.varchar.data, "Abhijith")==0);
-
-
+    assert(strcmp("Abhijith", out_data.data[2].data.varchar.data) ==0);
 
     destroy_table(table);
 
