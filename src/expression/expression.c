@@ -7,7 +7,7 @@ minidb_expr_t make_int(int32_t number) {
     expr.type = NODE_INT;
     expr.data.number = number;
 
-    expr.eval_expr = eval_int;
+    expr.evaluate = eval_int;
 
     return expr;
 }
@@ -17,7 +17,7 @@ minidb_expr_t make_decimal(double decimal) {
     expr.type = NODE_DECIMAL;
     expr.data.decimal = decimal;
 
-    expr.eval_expr = eval_decimal;
+    expr.evaluate = eval_decimal;
 
     return expr;
 }
@@ -28,7 +28,7 @@ minidb_expr_t make_varchar(size_t length, char *data) {
     expr.data.varchar.length = length;
     expr.data.varchar.data = data;
 
-    expr.eval_expr = eval_varchar;
+    expr.evaluate = eval_varchar;
 
     return expr;
 }
@@ -39,7 +39,7 @@ minidb_expr_t make_column(size_t length, char *data) {
     expr.data.varchar.length = length;
     expr.data.varchar.data = data;
 
-    expr.eval_expr = eval_column;
+    expr.evaluate = eval_column;
 
     return expr;
 }
@@ -51,7 +51,7 @@ minidb_expr_t make_expr(minidb_operation_t op, minidb_expr_t *l_expr, minidb_exp
     expr.data.expr.l_expr = l_expr;
     expr.data.expr.r_expr = r_expr;
 
-    expr.eval_expr = eval_expr;
+    expr.evaluate = eval_expr;
 
     return expr;
 }
@@ -79,8 +79,8 @@ minidb_data_t eval_varchar(minidb_expr_t *expr, minidb_structured_row_t *row) {
 }
 
 minidb_data_t eval_column(minidb_expr_t *expr, minidb_structured_row_t *row) {
-    for (size_t i = 0; i < row->schema->n_cols; i++) {
-        if (strcmp(expr->data.column.data, row->schema->cols[i].name)==0) {
+    for (size_t i = 0; i < row->n_cols; i++) {
+        if (strcmp(expr->data.column.data, row->cols[i].name)==0) {
             return row->data[i];
         }
     }
@@ -327,8 +327,8 @@ minidb_data_t eval_id_op(minidb_data_t *l, minidb_data_t *r, minidb_operation_t 
 }
 
 minidb_data_t eval_expr(minidb_expr_t *expr, minidb_structured_row_t *row) {
-    minidb_data_t left_data = eval_expr(expr->data.expr.l_expr, row);
-    minidb_data_t right_data = eval_expr(expr->data.expr.r_expr, row);
+    minidb_data_t left_data = expr->data.expr.l_expr->evaluate(expr->data.expr.l_expr, row);
+    minidb_data_t right_data = expr->data.expr.r_expr->evaluate(expr->data.expr.r_expr, row);
     minidb_operation_t op = expr->data.expr.op;
 
     if (left_data.type != right_data.type) {

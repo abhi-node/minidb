@@ -49,7 +49,7 @@ struct minidb_expr_t {
         } expr;
     } data;
 
-    minidb_data_t (*eval_expr)(minidb_expr_t *expr, minidb_structured_row_t *row);
+    minidb_data_t (*evaluate)(minidb_expr_t *expr, minidb_structured_row_t *row);
 };
 
 minidb_expr_t make_int(int32_t number);

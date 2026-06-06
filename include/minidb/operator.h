@@ -24,6 +24,12 @@ typedef struct {
     minidb_operator_t *child;
 } minidb_filter_state_t;
 
+typedef struct {
+    minidb_expr_t **expr;
+    size_t n_cols;
+    minidb_operator_t *child;
+} minidb_project_state_t;
+
 void scan_open(minidb_operator_t *op);
 void scan_close(minidb_operator_t *op);
 minidb_db_status scan_next(minidb_operator_t *op, minidb_structured_row_t *out_row);
@@ -33,6 +39,11 @@ void filter_open(minidb_operator_t *op);
 void filter_close(minidb_operator_t *op);
 minidb_db_status filter_next(minidb_operator_t *op, minidb_structured_row_t *out_row);
 minidb_operator_t make_filter(minidb_expr_t *expr, minidb_operator_t *child);
+
+void project_open(minidb_operator_t *op);
+void project_close(minidb_operator_t *op);
+minidb_db_status project_next(minidb_operator_t *op, minidb_structured_row_t *out_row);
+minidb_operator_t make_project(minidb_expr_t **expr, size_t n_cols, minidb_operator_t *child);
 
 /*TODO: Create expression types and expression evaluate function */
 /*TODO: Create filter operator functions */

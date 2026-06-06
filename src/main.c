@@ -1,3 +1,4 @@
+#include "minidb/expression.h"
 #include "minidb/schema.h"
 #include "minidb/operator.h"
 #include <stdlib.h>
@@ -27,7 +28,7 @@ int main(void) {
     data[0] = (minidb_data_t) {
         .type = ID_TYPE,
         .data = {
-            .id = 0
+            .id = 200
         }
     };
     data[1] = (minidb_data_t) {
@@ -51,12 +52,18 @@ int main(void) {
 
     minidb_structured_row_t out_data;
 
-    minidb_operator_t scan_op = make_scan(table);
-    scan_open(&scan_op);
-    scan_next(&scan_op, &out_data);
-    scan_close(&scan_op);
+    minidb_expr_t l_expr = make_int(500);
+    minidb_expr_t r_expr = make_column(6, "amount");
+    minidb_expr_t expr = make_expr(LESS, &l_expr, &r_expr);
 
-    printf("%s", out_data.data[2].data.varchar.data);
+    minidb_operator_t scan_op = make_scan(table);
+    minidb_operator_t filter_op = make_filter(&expr, &scan_op);
+
+    filter_op.open(&filter_op);
+    filter_op.next(&filter_op, &out_data);
+    filter_op.close(&filter_op);
+
+    printf("%d", out_data.data[0].data.id);
 
     destroy_table(table);
 

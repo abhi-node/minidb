@@ -58,7 +58,7 @@ typedef struct {
 typedef struct {
     minidb_data_t *data;
     size_t n_cols;
-    minidb_schema_t *schema;
+    minidb_column_t *cols;
 } minidb_structured_row_t;
 
 typedef struct {

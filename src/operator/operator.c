@@ -31,8 +31,8 @@ minidb_db_status scan_next(minidb_operator_t *op, minidb_structured_row_t *out_r
     }
 
     minidb_scan_state_t *state = op->state;
-
     if (state->cursor >= state->table->n_rows) {
+        out_row = NULL;
         return MINIDB_ERR_ROWS_EXHAUSTED;
     }
 
@@ -42,21 +42,25 @@ minidb_db_status scan_next(minidb_operator_t *op, minidb_structured_row_t *out_r
         return MINIDB_ERR_MEM_ALLOC_FAIL;
     }
 
-    out_row->schema = &(state->table->schema);
+    out_row->cols = state->table->schema.cols;
+    out_row->n_cols = state->table->schema.n_cols;
     for (size_t i = 0; i < state->table->schema.n_cols; i++) {
         switch (state->table->schema.cols[i].type) {
             case ID_TYPE:  {
                 memcpy(&(out_row->data[i].data.id), state->table->rows[state->cursor].bytes + offset, sizeof(uint32_t));
+                out_row->data[i].type = ID_TYPE;
                 offset+=sizeof(uint32_t);
                 break;
             }
             case INT_TYPE: {
                 memcpy(&(out_row->data[i].data.number), state->table->rows[state->cursor].bytes + offset, sizeof(int32_t));
+                out_row->data[i].type = INT_TYPE;
                 offset+=sizeof(int32_t);
                 break;
             }
             case DECIMAL_TYPE: {
                 memcpy(&(out_row->data[i].data.decimal), state->table->rows[state->cursor].bytes + offset, sizeof(double));
+                out_row->data[i].type = DECIMAL_TYPE;
                 offset+=sizeof(double);
                 break;
             }
@@ -67,12 +71,14 @@ minidb_db_status scan_next(minidb_operator_t *op, minidb_structured_row_t *out_r
                 if (out_row->data[i].data.varchar.data == NULL) {
                     return MINIDB_ERR_MEM_ALLOC_FAIL;
                 }
+                out_row->data[i].type = VARCHAR_TYPE;
                 memcpy((out_row->data[i].data.varchar.data), state->table->rows[state->cursor].bytes + offset, out_row->data[i].data.varchar.length * sizeof(char));
                 offset+=out_row->data[i].data.varchar.length*sizeof(char);
                 break;
             }
             case BOOL_TYPE: {
                 memcpy(&out_row->data[i].data.boolean, state->table->rows[state->cursor].bytes+offset, sizeof(bool));
+                out_row->data[i].type = BOOL_TYPE;
                 offset+=sizeof(bool);
                 break;
             }
@@ -115,9 +121,9 @@ minidb_db_status filter_next(minidb_operator_t *op, minidb_structured_row_t *out
 
     minidb_filter_state_t *state = op->state;
 
-    state->child->next(state->child, out_row);
-    while (out_row != NULL) {
-        minidb_data_t result = state->expr->eval_expr(state->expr, out_row);
+    minidb_db_status row_status = state->child->next(state->child, out_row);
+    while (row_status == MINIDB_OK) {
+        minidb_data_t result = state->expr->evaluate(state->expr, out_row);
         if (result.type != BOOL_TYPE) {
             return MINIDB_ERR_INVALID_CALL;
         }
@@ -125,13 +131,64 @@ minidb_db_status filter_next(minidb_operator_t *op, minidb_structured_row_t *out
         if (result.data.boolean) {
             return MINIDB_OK;
         }
-        state->child->next(state->child, out_row);
+        row_status = state->child->next(state->child, out_row);
     }
+
+    free(out_row->data);
 
     return MINIDB_ERR_ROWS_EXHAUSTED;
 }
 
 void filter_close(minidb_operator_t *op) {
     minidb_filter_state_t *state = op->state;
+    state->child->close(state->child);
+}
+
+minidb_operator_t make_project(minidb_expr_t **expr, size_t n_cols, minidb_operator_t *child) {
+    minidb_project_state_t *state = malloc(sizeof(minidb_project_state_t));
+
+    state->expr = expr;
+    state->n_cols = n_cols;
+    state->child = child;
+
+    minidb_operator_t op;
+    op.open = project_open;
+    op.close = project_close;
+    op.next = project_next;
+    op.state = state;
+
+    return op;
+}
+
+void project_open(minidb_operator_t *op) {
+    minidb_project_state_t *state = op->state;
+    state->child->open(state->child);
+}
+
+minidb_db_status project_next(minidb_operator_t *op, minidb_structured_row_t *out_row) {
+    minidb_project_state_t *state = op->state;
+
+    state->child->next(state->child, out_row);
+
+    if (out_row == NULL) {
+        return MINIDB_ERR_ROWS_EXHAUSTED;
+    }
+
+    minidb_structured_row_t row;
+    row.data = malloc(sizeof(minidb_data_t)*state->n_cols);
+    row.n_cols = state->n_cols;
+    row.cols = malloc(sizeof(minidb_column_t)*row.n_cols);
+
+    for (size_t i = 0; i < row.n_cols; i++) {
+        row.cols[i].name = state->expr[i]->data.column.data;
+        row.data[i] = state->expr[i]->evaluate(state->expr[i], out_row);
+        row.cols[i].type = row.data[i].type;
+    }
+
+    return MINIDB_OK;
+}
+
+void project_close(minidb_operator_t *op) {
+    minidb_project_state_t *state = op->state;
     state->child->close(state->child);
 }
