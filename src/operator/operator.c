@@ -1,4 +1,6 @@
 #include "minidb/operator.h"
+#include "minidb/expression.h"
+#include "minidb/schema.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -82,3 +84,54 @@ minidb_db_status scan_next(minidb_operator_t *op, minidb_structured_row_t *out_r
 }
 
 void scan_close(minidb_operator_t *op) {}
+
+minidb_operator_t make_filter(minidb_expr_t *expr, minidb_operator_t *child) {
+    minidb_filter_state_t *state = malloc(sizeof(minidb_filter_state_t));
+
+    state->expr = expr;
+    state->child = child;
+
+    minidb_operator_t op;
+    op.open = filter_open;
+    op.close = filter_close;
+    op.next = filter_next;
+    op.state = state;
+
+    return op;
+}
+
+void filter_open(minidb_operator_t *op) {
+    if (op == NULL) {
+        return;
+    }
+    minidb_filter_state_t *state = op->state;
+    state->child->open(state->child);
+}
+
+minidb_db_status filter_next(minidb_operator_t *op, minidb_structured_row_t *out_row) {
+    if (op == NULL || out_row == NULL) {
+        return MINIDB_ERR_INVALID_CALL;
+    }
+
+    minidb_filter_state_t *state = op->state;
+
+    state->child->next(state->child, out_row);
+    while (out_row != NULL) {
+        minidb_data_t result = state->expr->eval_expr(state->expr, out_row);
+        if (result.type != BOOL_TYPE) {
+            return MINIDB_ERR_INVALID_CALL;
+        }
+
+        if (result.data.boolean) {
+            return MINIDB_OK;
+        }
+        state->child->next(state->child, out_row);
+    }
+
+    return MINIDB_ERR_ROWS_EXHAUSTED;
+}
+
+void filter_close(minidb_operator_t *op) {
+    minidb_filter_state_t *state = op->state;
+    state->child->close(state->child);
+}
