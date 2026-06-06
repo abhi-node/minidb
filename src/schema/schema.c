@@ -7,7 +7,7 @@
 #define INITIAL_TABLE_CAPACITY 32
 #define TABLE_INCREASE_FACTOR 2
 
-minidb_column_t create_column(minidb_column_data_t type, char *name) {
+minidb_column_t create_column(minidb_return_t type, char *name) {
     minidb_column_t out_col;
 
     out_col.name = name;
@@ -30,7 +30,7 @@ minidb_db_status create_schema(minidb_column_t *cols, size_t n_cols, minidb_sche
     return MINIDB_OK;
 }
 
-minidb_db_status create_table(minidb_column_data_t* types, char** names, size_t n_cols, char* name, minidb_table_t *out_table) {
+minidb_db_status create_table(minidb_return_t* types, char** names, size_t n_cols, char* name, minidb_table_t *out_table) {
     if (types == NULL || names == NULL || name == NULL || out_table == NULL) {
         return MINIDB_ERR_INVALID_CALL;
     }
@@ -81,19 +81,19 @@ size_t get_data_size(size_t count, minidb_data_t *data) {
     size_t size = 0;
     for (size_t i = 0; i < count; i++) {
         switch (data[i].type) {
-            case COLUMN_ID: {
+            case ID_TYPE: {
                 size+=sizeof(uint32_t);
                 break;
             }
-            case COLUMN_INT: {
+            case INT_TYPE: {
                 size+=sizeof(int32_t);
                 break;
             }
-            case COLUMN_DECIMAL: {
+            case DECIMAL_TYPE: {
                 size+= sizeof(double);
                 break;
             }
-            case COLUMN_VARCHAR: {
+            case VARCHAR_TYPE: {
                 size+=sizeof(size_t);
                 size+= data[i].data.varchar.length*sizeof(char);
                 break;
@@ -119,22 +119,22 @@ minidb_db_status create_row(minidb_schema_t schema, minidb_data_t *data, minidb_
             return MINIDB_ERR_SCHEMA_MISMATCH;
         }
         switch(schema.cols[i].type) {
-            case COLUMN_ID: {
+            case ID_TYPE: {
                 memcpy(out_row->bytes+offset, &(data[i].data.id), sizeof(uint32_t));
                 offset+=sizeof(uint32_t);
                 break;
             }
-            case COLUMN_INT: {
-                memcpy(out_row->bytes+offset, &(data[i].data.integer), sizeof(int32_t));
+            case INT_TYPE: {
+                memcpy(out_row->bytes+offset, &(data[i].data.number), sizeof(int32_t));
                 offset+=sizeof(int32_t);
                 break;
             }
-            case COLUMN_DECIMAL: {
+            case DECIMAL_TYPE: {
                 memcpy(out_row->bytes+offset, &(data[i].data.decimal), sizeof(double));
                 offset+=sizeof(double);
                 break;
             }
-            case COLUMN_VARCHAR: {
+            case VARCHAR_TYPE: {
                 if (data[i].data.varchar.length > VARCHAR_MAX_SIZE) {
                     return MINIDB_ERR_SCHEMA_MISMATCH;
                 }
@@ -142,6 +142,11 @@ minidb_db_status create_row(minidb_schema_t schema, minidb_data_t *data, minidb_
                 offset+=sizeof(size_t);
                 memcpy(out_row->bytes+offset, (data[i].data.varchar.data), data[i].data.varchar.length*sizeof(char));
                 offset+=data[i].data.varchar.length*sizeof(char);
+                break;
+            }
+            case BOOL_TYPE: {
+                memcpy(out_row->bytes+offset, &(data[i].data.boolean), sizeof(bool));
+                offset+=sizeof(bool);
                 break;
             }
         }
@@ -217,25 +222,25 @@ minidb_db_status scan_next(minidb_operator_t *op, minidb_structured_row_t *out_r
         return MINIDB_ERR_MEM_ALLOC_FAIL;
     }
 
-    out_row->n_cols = state->table->schema.n_cols;
+    out_row->schema = &(state->table->schema);
     for (size_t i = 0; i < state->table->schema.n_cols; i++) {
         switch (state->table->schema.cols[i].type) {
-            case COLUMN_ID:  {
+            case ID_TYPE:  {
                 memcpy(&(out_row->data[i].data.id), state->table->rows[state->cursor].bytes + offset, sizeof(uint32_t));
                 offset+=sizeof(uint32_t);
                 break;
             }
-            case COLUMN_INT: {
-                memcpy(&(out_row->data[i].data.integer), state->table->rows[state->cursor].bytes + offset, sizeof(int32_t));
+            case INT_TYPE: {
+                memcpy(&(out_row->data[i].data.number), state->table->rows[state->cursor].bytes + offset, sizeof(int32_t));
                 offset+=sizeof(int32_t);
                 break;
             }
-            case COLUMN_DECIMAL: {
+            case DECIMAL_TYPE: {
                 memcpy(&(out_row->data[i].data.decimal), state->table->rows[state->cursor].bytes + offset, sizeof(double));
                 offset+=sizeof(double);
                 break;
             }
-            case COLUMN_VARCHAR: {
+            case VARCHAR_TYPE: {
                 memcpy(&out_row->data[i].data.varchar.length , state->table->rows[state->cursor].bytes + offset, sizeof(size_t));
                 offset+=sizeof(size_t);
                 out_row->data[i].data.varchar.data = malloc(out_row->data[i].data.varchar.length * sizeof(char) + 1);
@@ -244,6 +249,11 @@ minidb_db_status scan_next(minidb_operator_t *op, minidb_structured_row_t *out_r
                 }
                 memcpy((out_row->data[i].data.varchar.data), state->table->rows[state->cursor].bytes + offset, out_row->data[i].data.varchar.length * sizeof(char));
                 offset+=out_row->data[i].data.varchar.length*sizeof(char);
+                break;
+            }
+            case BOOL_TYPE: {
+                memcpy(&out_row->data[i].data.boolean, state->table->rows[state->cursor].bytes+offset, sizeof(bool));
+                offset+=sizeof(bool);
                 break;
             }
         }

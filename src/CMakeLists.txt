@@ -1,7 +1,8 @@
 # Build the core as a library
 add_library(minidb_core
     schema/schema.c
-    ast/ast.c
+    expression/expression.c
+    operator/operator.c
 )
 
 # The CLI executable

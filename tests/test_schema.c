@@ -1,15 +1,16 @@
 #include <assert.h>
 #include "minidb/schema.h"
+#include "minidb/operator.h"
 #include <stdlib.h>
 #include <string.h>
 
 void test_insert_and_retrieve(void) {
-    minidb_column_data_t *types = malloc(sizeof(minidb_column_data_t)*3);
+    minidb_return_t *types = malloc(sizeof(minidb_return_t)*3);
     char **names = malloc(sizeof(char*)*3);
 
-    types[0] = COLUMN_ID;
-    types[1] = COLUMN_INT;
-    types[2] = COLUMN_VARCHAR;
+    types[0] = ID_TYPE;
+    types[1] = INT_TYPE;
+    types[2] = VARCHAR_TYPE;
 
     names[0] = "id";
     names[1] = "amount";
@@ -23,19 +24,19 @@ void test_insert_and_retrieve(void) {
     minidb_data_t data[3];
 
     data[0] = (minidb_data_t) {
-        .type = COLUMN_ID,
+        .type = ID_TYPE,
         .data = {
             .id = 0
         }
     };
     data[1] = (minidb_data_t) {
-        .type = COLUMN_INT,
+        .type = INT_TYPE,
         .data = {
-            .integer = 100
+            .number = 100
         }
     };
     data[2] = (minidb_data_t) {
-        .type = COLUMN_VARCHAR,
+        .type = VARCHAR_TYPE,
         .data = {
             .varchar = {
                 .length = 8,
@@ -65,3 +66,9 @@ int main(void) {
 
     return EXIT_SUCCESS;
 }
+
+
+/*
+ *
+ * TODO: write tests, specifically unit tests - integration is chill
+ */
