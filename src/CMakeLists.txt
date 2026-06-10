@@ -3,6 +3,7 @@ add_library(minidb_core
     schema/schema.c
     expression/expression.c
     operator/operator.c
+    tokenizer/tokenizer.c
 )
 
 # The CLI executable
