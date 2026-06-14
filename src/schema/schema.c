@@ -176,7 +176,7 @@ minidb_db_status insert_row(minidb_data_t *data, size_t n_data, minidb_table_t *
         }
 
         table->rows = rows;
-        table->capacity = TABLE_INCREASE_FACTOR*sizeof(minidb_row_t)* table->capacity;
+        table->capacity = TABLE_INCREASE_FACTOR* table->capacity;
     }
 
     table->rows[table->n_rows] = row;
