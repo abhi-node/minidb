@@ -84,7 +84,10 @@ minidb_db_status tokenize(FILE *f, minidb_token_set_t *out_tokens) {
         if (c == ' ' || c == '\n') {
             buffer[i] = '\0';
             minidb_token_t token = match_token(buffer, i);
-            insert_token(token, out_tokens);
+            minidb_db_status insert_status = insert_token(token, out_tokens);
+            if (insert_status != MINIDB_OK) {
+                return insert_status;
+            }
             i = 0;
         }
         buffer[i] = c;
