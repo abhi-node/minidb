@@ -20,6 +20,7 @@ add_compile_definitions(_XOPEN_SOURCE=700)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_subdirectory(src)
+add_subdirectory(bench)
 
 enable_testing()
 add_subdirectory(tests)
