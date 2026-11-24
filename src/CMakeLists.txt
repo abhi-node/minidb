@@ -3,12 +3,16 @@ add_library(minidb_core
     common/status.c
     common/arena.c
     common/checksum.c
+    common/failpoint.c
     value/value.c
     schema/schema.c
     row/row.c
     pager/pager.c
     btree/btree.c
     wal/wal.c
+    catalog/catalog.c
+    storage/storage.c
+    storage/recovery.c
 )
 
 add_executable(minidb main.c)
