@@ -19,6 +19,7 @@ add_library(minidb_core
     operator/scan.c
     operator/filter.c
     operator/project.c
+    operator/join.c
     operator/limit.c
 )
 
