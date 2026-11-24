@@ -14,6 +14,7 @@ add_library(minidb_core
     storage/storage.c
     storage/recovery.c
     lexer/lexer.c
+    parser/parser.c
 )
 
 add_executable(minidb main.c)
