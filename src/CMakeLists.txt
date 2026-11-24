@@ -24,6 +24,7 @@ add_library(minidb_core
     operator/limit.c
     planner/planner.c
     executor/executor.c
+    db/db.c
 )
 
 add_executable(minidb main.c)
