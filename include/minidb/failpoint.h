@@ -5,8 +5,7 @@
  * Crash injection for recovery tests.
  *
  * A test arms one failpoint in a child process; when execution reaches it
- * the process exits on the spot, without flushing or closing anything, as if
- * it had been killed there. The parent then reopens the database and checks
+ * the process sends itself SIGKILL, so nothing is flushed, closed or freed. The parent then reopens the database and checks
  * what recovery made of the wreckage. Unarmed failpoints cost one compare.
  */
 
@@ -17,9 +16,6 @@ typedef enum {
     MINIDB_FAILPOINT_CHECKPOINT_HALF_WRITTEN,  /* database file partly overwritten */
     MINIDB_FAILPOINT_CHECKPOINT_WRITTEN        /* database file complete, log not yet emptied */
 } minidb_failpoint_t;
-
-/* Exit code of a process that died at a failpoint. */
-#define MINIDB_FAILPOINT_EXIT_CODE 77
 
 void minidb_failpoint_arm(minidb_failpoint_t failpoint);
 

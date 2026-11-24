@@ -1,5 +1,6 @@
 #include "test.h"
 
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 
@@ -9,9 +10,9 @@
 #include "minidb/storage.h"
 
 /*
- * Crash tests run the workload in a forked child that dies without closing
- * the database -- either by calling _exit() or by hitting an armed
- * failpoint -- and then reopen the files in the parent.
+ * Crash tests run the workload in a forked child that is killed with SIGKILL
+ * -- at the end of the workload or at an armed failpoint -- and then reopen
+ * the files in the parent.
  */
 
 #define ROW_TEXT_LENGTH 400
@@ -96,20 +97,20 @@ static int64_t count_notes(minidb_storage_t *storage) {
     return count;
 }
 
-/* Runs `workload` in a child that never returns normally; yields its exit code. */
+/* Runs `workload` in a child and kills it; true if it died by SIGKILL (and
+ * not from a failed CHECK). */
 typedef void (*workload_t)(const char *path);
-static int run_and_crash(workload_t workload, const char *path) {
+static bool run_and_crash(workload_t workload, const char *path) {
     fflush(stdout);
     pid_t child = fork();
     CHECK(child >= 0);
     if (child == 0) {
         workload(path);
-        _exit(0);  /* no close, no flush: the process just stops */
+        kill(getpid(), SIGKILL);  /* no close, no flush: the process just stops */
     }
     int wait_status;
     CHECK(waitpid(child, &wait_status, 0) == child);
-    CHECK(WIFEXITED(wait_status));
-    return WEXITSTATUS(wait_status);
+    return WIFSIGNALED(wait_status) && WTERMSIG(wait_status) == SIGKILL;
 }
 
 /* ---- Clean shutdown ------------------------------------------------------ */
@@ -152,7 +153,7 @@ static void workload_full_sync_inserts(const char *path) {
 static void test_full_sync_loses_nothing(void) {
     char path[256];
     test_scratch_path(path, sizeof(path), "storage_full");
-    CHECK(run_and_crash(workload_full_sync_inserts, path) == 0);
+    CHECK(run_and_crash(workload_full_sync_inserts, path));
 
     minidb_options_t options = options_with(MINIDB_SYNC_FULL);
     minidb_storage_t *storage;
@@ -186,7 +187,7 @@ static void workload_group_commit_window(const char *path) {
 static void test_group_commit_loses_only_the_unsynced_window(void) {
     char path[256];
     test_scratch_path(path, sizeof(path), "storage_group");
-    CHECK(run_and_crash(workload_group_commit_window, path) == 0);
+    CHECK(run_and_crash(workload_group_commit_window, path));
 
     minidb_options_t options = options_with(MINIDB_SYNC_GROUP);
     minidb_storage_t *storage;
@@ -219,7 +220,7 @@ static void workload_uncommitted_statement(const char *path) {
 static void test_statements_are_all_or_nothing(void) {
     char path[256];
     test_scratch_path(path, sizeof(path), "storage_atomic");
-    CHECK(run_and_crash(workload_uncommitted_statement, path) == 0);
+    CHECK(run_and_crash(workload_uncommitted_statement, path));
 
     minidb_options_t options = options_with(MINIDB_SYNC_FULL);
     minidb_storage_t *storage;
@@ -266,7 +267,7 @@ static void workload_updates_deletes_and_drop(const char *path) {
 static void test_replays_updates_deletes_and_drops(void) {
     char path[256];
     test_scratch_path(path, sizeof(path), "storage_mixed");
-    CHECK(run_and_crash(workload_updates_deletes_and_drop, path) == 0);
+    CHECK(run_and_crash(workload_updates_deletes_and_drop, path));
 
     minidb_options_t options = options_with(MINIDB_SYNC_FULL);
     minidb_storage_t *storage;
@@ -283,7 +284,7 @@ static void test_torn_log_tail_drops_only_the_last_statement(void) {
     char wal_path[300];
     test_scratch_path(path, sizeof(path), "storage_torn");
     snprintf(wal_path, sizeof(wal_path), "%s.wal", path);
-    CHECK(run_and_crash(workload_full_sync_inserts, path) == 0);
+    CHECK(run_and_crash(workload_full_sync_inserts, path));
 
     struct stat info;
     CHECK(stat(wal_path, &info) == 0);
@@ -330,14 +331,14 @@ static void workload_crash_during_checkpoint(const char *path) {
 
     minidb_failpoint_arm(checkpoint_failpoint);
     CHECK_OK(minidb_storage_checkpoint(storage));
-    _exit(1);  /* the failpoint should have fired */
+    exit(EXIT_FAILURE);  /* the failpoint should have fired */
 }
 
 static void check_checkpoint_crash(minidb_failpoint_t failpoint, const char *name) {
     char path[256];
     test_scratch_path(path, sizeof(path), name);
     checkpoint_failpoint = failpoint;
-    CHECK(run_and_crash(workload_crash_during_checkpoint, path) == MINIDB_FAILPOINT_EXIT_CODE);
+    CHECK(run_and_crash(workload_crash_during_checkpoint, path));
 
     minidb_options_t options = options_with(MINIDB_SYNC_GROUP);
     minidb_storage_t *storage;
@@ -393,7 +394,7 @@ static void workload_small_log_limit(const char *path) {
 static void test_log_is_checkpointed_when_it_grows(void) {
     char path[256];
     test_scratch_path(path, sizeof(path), "storage_auto_ckpt");
-    CHECK(run_and_crash(workload_small_log_limit, path) == 0);
+    CHECK(run_and_crash(workload_small_log_limit, path));
 
     minidb_options_t options = options_with(MINIDB_SYNC_FULL);
     minidb_storage_t *storage;
