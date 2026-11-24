@@ -22,7 +22,7 @@ minidb_options_t minidb_options_default(void) {
         .sync_mode = MINIDB_SYNC_GROUP,
         .group_commit_delay_ms = 5,
         .group_commit_bytes = 256 * 1024,
-        .cache_pages = 8192,
+        .cache_pages = 16384,
         .checkpoint_wal_bytes = 32ull * 1024 * 1024,
     };
     return options;
@@ -151,8 +151,13 @@ minidb_status_t minidb_storage_delete(minidb_storage_t *storage, minidb_table_t 
 /* ---- Statement boundaries ------------------------------------------------ */
 
 static bool checkpoint_is_due(const minidb_storage_t *storage) {
-    /* Dirty pages cannot be evicted, so do not let them crowd out the cache. */
-    uint32_t dirty_page_limit = storage->options.cache_pages / 2;
+    /*
+     * Dirty pages cannot be evicted, so they must not fill the cache. But a
+     * checkpoint rewrites every dirty page twice (log, then file), so the
+     * longer it is put off, the more changes each rewritten page absorbs.
+     * Three quarters of the cache leaves room for clean pages to cycle.
+     */
+    uint32_t dirty_page_limit = storage->options.cache_pages / 4 * 3;
     return minidb_wal_size(storage->wal) >= storage->options.checkpoint_wal_bytes ||
            minidb_pager_dirty_count(storage->pager) >= dirty_page_limit;
 }

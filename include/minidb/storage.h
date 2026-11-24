@@ -37,7 +37,7 @@ typedef struct {
     uint64_t checkpoint_wal_bytes;   /* checkpoint once the log grows past this */
 } minidb_options_t;
 
-/* GROUP commit with a 5 ms window, a 32 MB cache and a 32 MB log. */
+/* GROUP commit with a 5 ms window, a 64 MB cache and a 32 MB log. */
 minidb_options_t minidb_options_default(void);
 
 typedef struct {
