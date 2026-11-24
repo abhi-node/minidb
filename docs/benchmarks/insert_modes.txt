@@ -1,0 +1,11 @@
+workload=insert sync=full delay_ms=5 keys=ascending rows=30000 seconds=5.4318 rows_per_sec=5523 fsyncs=30003 wal_mb=1.5 checkpoints=1
+workload=insert sync=group delay_ms=5 keys=ascending rows=2000000 seconds=2.6928 rows_per_sec=742715 fsyncs=418 wal_mb=177.8 checkpoints=4
+workload=insert sync=off delay_ms=5 keys=ascending rows=2000000 seconds=2.2284 rows_per_sec=897521 fsyncs=9 wal_mb=177.8 checkpoints=4
+workload=insert sync=group delay_ms=5 keys=random rows=500000 seconds=0.9024 rows_per_sec=554057 fsyncs=153 wal_mb=31.4 checkpoints=1
+workload=insert sync=group delay_ms=5 keys=ascending rows=2000000 seconds=2.6366 rows_per_sec=758556 fsyncs=418 wal_mb=177.8 checkpoints=4
+workload=insert sync=off delay_ms=5 keys=ascending rows=2000000 seconds=2.3627 rows_per_sec=846492 fsyncs=9 wal_mb=177.8 checkpoints=4
+workload=insert sync=group delay_ms=5 keys=random rows=500000 seconds=1.1815 rows_per_sec=423206 fsyncs=197 wal_mb=31.4 checkpoints=1
+workload=insert sync=group delay_ms=5 keys=ascending rows=2000000 seconds=3.1613 rows_per_sec=632655 fsyncs=429 wal_mb=177.8 checkpoints=4
+workload=insert sync=off delay_ms=5 keys=ascending rows=2000000 seconds=2.6850 rows_per_sec=744880 fsyncs=9 wal_mb=177.8 checkpoints=4
+workload=insert sync=group delay_ms=5 keys=random rows=500000 seconds=1.3370 rows_per_sec=373974 fsyncs=205 wal_mb=31.4 checkpoints=1
+workload=insert sync=group delay_ms=5 keys=random rows=2000000 seconds=36.4128 rows_per_sec=54926 fsyncs=1224 wal_mb=5565.5 checkpoints=114

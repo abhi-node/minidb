@@ -1,0 +1,1 @@
+workload=insert sync=group delay_ms=5 keys=ascending rows=10000000 seconds=13.6512 rows_per_sec=732538 fsyncs=2118 wal_mb=919.2 checkpoints=17

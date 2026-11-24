@@ -1,0 +1,5 @@
+workload=lookup rows=1000 lookups=200000 seconds=0.1147 ns_per_lookup=574 lookups_per_sec=1743202 pages_per_lookup=2.01
+workload=lookup rows=10000 lookups=200000 seconds=0.1215 ns_per_lookup=608 lookups_per_sec=1645457 pages_per_lookup=2.01
+workload=lookup rows=100000 lookups=200000 seconds=0.1680 ns_per_lookup=840 lookups_per_sec=1190630 pages_per_lookup=3.01
+workload=lookup rows=1000000 lookups=200000 seconds=0.3279 ns_per_lookup=1640 lookups_per_sec=609861 pages_per_lookup=3.01
+workload=lookup rows=4000000 lookups=200000 seconds=0.3997 ns_per_lookup=1999 lookups_per_sec=500368 pages_per_lookup=3.01
