@@ -1,3 +1,4 @@
 # Build Artifacts
 build/
 .cache/
+build-profile/
