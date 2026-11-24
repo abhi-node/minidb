@@ -23,6 +23,7 @@ add_library(minidb_core
     operator/sort.c
     operator/limit.c
     planner/planner.c
+    executor/executor.c
 )
 
 add_executable(minidb main.c)
