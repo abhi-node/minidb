@@ -6,6 +6,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "minidb/failpoint.h"
+
 /* ---- File header (page 0) ------------------------------------------------ */
 
 static const uint8_t FILE_MAGIC[8] = {'M', 'I', 'N', 'I', 'D', 'B', 0, 1};
@@ -404,10 +406,15 @@ minidb_status_t minidb_pager_visit_dirty(minidb_pager_t *pager, minidb_page_visi
 }
 
 minidb_status_t minidb_pager_write_dirty(minidb_pager_t *pager) {
+    uint32_t halfway_count = pager->dirty_count / 2;
+
     for (uint32_t index = 0; index < pager->frame_count; index++) {
         minidb_page_t *page = pager->frames[index];
         if (!page->is_dirty) {
             continue;
+        }
+        if (pager->dirty_count == halfway_count) {
+            minidb_failpoint_hit(MINIDB_FAILPOINT_CHECKPOINT_HALF_WRITTEN);
         }
         minidb_status_t status = file_write_page(pager, page);
         if (status != MINIDB_OK) {
