@@ -6,6 +6,7 @@ add_library(minidb_core
     schema/schema.c
     row/row.c
     pager/pager.c
+    btree/btree.c
 )
 
 add_executable(minidb main.c)

@@ -7,3 +7,4 @@ endfunction()
 
 minidb_add_test(row)
 minidb_add_test(pager)
+minidb_add_test(btree)
