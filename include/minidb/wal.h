@@ -22,9 +22,11 @@
  * Commits are buffered and made durable according to the sync mode:
  *
  *   FULL   write + fsync on every commit. Nothing is ever lost.
- *   GROUP  commits share an fsync: the buffer is flushed once the oldest
- *          waiting commit is `group_commit_delay_ms` old or the buffer holds
- *          `group_commit_bytes`. A crash can lose that last window.
+ *   GROUP  commits share an fsync: the buffer is flushed by the first
+ *          commit that finds the oldest waiting commit `group_commit_delay_ms`
+ *          old, or the buffer holding `group_commit_bytes`. A crash loses the
+ *          commits still waiting. The delay is checked when a statement
+ *          commits, so a caller that goes idle should call minidb_wal_sync().
  *   OFF    written when the buffer fills, fsynced only by checkpoints.
  *
  * Records of a statement that has not committed never reach the file, so a

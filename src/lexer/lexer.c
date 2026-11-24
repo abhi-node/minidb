@@ -5,27 +5,31 @@
 
 typedef struct {
     const char *word;  /* lower case */
+    uint32_t length;
     minidb_token_type_t type;
 } keyword_t;
 
+#define KEYWORD(word, type) {word, sizeof(word) - 1, type}
+
 static const keyword_t KEYWORDS[] = {
-    {"select", MINIDB_TOKEN_SELECT},   {"from", MINIDB_TOKEN_FROM},
-    {"where", MINIDB_TOKEN_WHERE},     {"and", MINIDB_TOKEN_AND},
-    {"or", MINIDB_TOKEN_OR},           {"not", MINIDB_TOKEN_NOT},
-    {"like", MINIDB_TOKEN_LIKE},       {"true", MINIDB_TOKEN_TRUE},
-    {"false", MINIDB_TOKEN_FALSE},     {"insert", MINIDB_TOKEN_INSERT},
-    {"into", MINIDB_TOKEN_INTO},       {"values", MINIDB_TOKEN_VALUES},
-    {"update", MINIDB_TOKEN_UPDATE},   {"set", MINIDB_TOKEN_SET},
-    {"delete", MINIDB_TOKEN_DELETE},   {"create", MINIDB_TOKEN_CREATE},
-    {"drop", MINIDB_TOKEN_DROP},       {"table", MINIDB_TOKEN_TABLE},
-    {"primary", MINIDB_TOKEN_PRIMARY}, {"key", MINIDB_TOKEN_KEY},
-    {"join", MINIDB_TOKEN_JOIN},       {"inner", MINIDB_TOKEN_INNER},
-    {"on", MINIDB_TOKEN_ON},           {"as", MINIDB_TOKEN_AS},
-    {"order", MINIDB_TOKEN_ORDER},     {"by", MINIDB_TOKEN_BY},
-    {"asc", MINIDB_TOKEN_ASC},         {"desc", MINIDB_TOKEN_DESC},
-    {"limit", MINIDB_TOKEN_LIMIT},
+    KEYWORD("select", MINIDB_TOKEN_SELECT),   KEYWORD("from", MINIDB_TOKEN_FROM),
+    KEYWORD("where", MINIDB_TOKEN_WHERE),     KEYWORD("and", MINIDB_TOKEN_AND),
+    KEYWORD("or", MINIDB_TOKEN_OR),           KEYWORD("not", MINIDB_TOKEN_NOT),
+    KEYWORD("like", MINIDB_TOKEN_LIKE),       KEYWORD("true", MINIDB_TOKEN_TRUE),
+    KEYWORD("false", MINIDB_TOKEN_FALSE),     KEYWORD("insert", MINIDB_TOKEN_INSERT),
+    KEYWORD("into", MINIDB_TOKEN_INTO),       KEYWORD("values", MINIDB_TOKEN_VALUES),
+    KEYWORD("update", MINIDB_TOKEN_UPDATE),   KEYWORD("set", MINIDB_TOKEN_SET),
+    KEYWORD("delete", MINIDB_TOKEN_DELETE),   KEYWORD("create", MINIDB_TOKEN_CREATE),
+    KEYWORD("drop", MINIDB_TOKEN_DROP),       KEYWORD("table", MINIDB_TOKEN_TABLE),
+    KEYWORD("primary", MINIDB_TOKEN_PRIMARY), KEYWORD("key", MINIDB_TOKEN_KEY),
+    KEYWORD("join", MINIDB_TOKEN_JOIN),       KEYWORD("inner", MINIDB_TOKEN_INNER),
+    KEYWORD("on", MINIDB_TOKEN_ON),           KEYWORD("as", MINIDB_TOKEN_AS),
+    KEYWORD("order", MINIDB_TOKEN_ORDER),     KEYWORD("by", MINIDB_TOKEN_BY),
+    KEYWORD("asc", MINIDB_TOKEN_ASC),         KEYWORD("desc", MINIDB_TOKEN_DESC),
+    KEYWORD("limit", MINIDB_TOKEN_LIMIT),
 };
 #define KEYWORD_COUNT (sizeof(KEYWORDS) / sizeof(KEYWORDS[0]))
+#define LONGEST_KEYWORD 7
 
 static bool is_digit(char character) { return character >= '0' && character <= '9'; }
 
@@ -42,20 +46,28 @@ static char to_lower(char character) {
     return character >= 'A' && character <= 'Z' ? (char)(character + ('a' - 'A')) : character;
 }
 
-/* Case-insensitive match of `text` against a lower-case keyword. */
+/* Case-insensitive match of `length` characters against a lower-case keyword. */
 static bool matches_keyword(const char *text, uint32_t length, const char *keyword) {
     for (uint32_t index = 0; index < length; index++) {
-        if (keyword[index] == '\0' || to_lower(text[index]) != keyword[index]) {
+        if (to_lower(text[index]) != keyword[index]) {
             return false;
         }
     }
-    return keyword[length] == '\0';
+    return true;
 }
 
 static minidb_token_type_t identifier_or_keyword(const char *text, uint32_t length) {
+    if (length > LONGEST_KEYWORD) {
+        return MINIDB_TOKEN_IDENTIFIER;
+    }
+    char first = to_lower(text[0]);
     for (size_t index = 0; index < KEYWORD_COUNT; index++) {
-        if (matches_keyword(text, length, KEYWORDS[index].word)) {
-            return KEYWORDS[index].type;
+        /* Length and first letter rule out almost every keyword before the
+         * character-by-character comparison. */
+        const keyword_t *keyword = &KEYWORDS[index];
+        if (keyword->length == length && keyword->word[0] == first &&
+            matches_keyword(text, length, keyword->word)) {
+            return keyword->type;
         }
     }
     return MINIDB_TOKEN_IDENTIFIER;
