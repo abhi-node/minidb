@@ -3,7 +3,8 @@
 
     scripts/flamegraph.py SAMPLES BINARY OUTPUT.svg [--title TEXT] [--top N]
 
-SAMPLES holds one sample per line: return addresses, innermost frame first.
+SAMPLES holds one sample per line: a weight (how many timer periods the
+sample stands for), then return addresses, innermost frame first.
 BINARY must be the statically linked minidb_bench that produced them
 (-DMINIDB_STATIC_BENCH=ON), so that addr2line can name every address.
 
@@ -96,17 +97,17 @@ def load_stacks(samples_path, binary):
     raw_samples = []
     with open(samples_path) as samples:
         for line in samples:
-            addresses = [int(text, 16) for text in line.split()]
-            if addresses:
-                raw_samples.append(addresses)
+            fields = line.split()
+            if len(fields) > 1:
+                raw_samples.append((int(fields[0]), [int(text, 16) for text in fields[1:]]))
 
     # The profiler's own frames come first. Find them by name: everything up
     # to and including the signal trampoline.
-    probe = symbolize(binary, sorted({a for sample in raw_samples for a in sample}))
+    probe = symbolize(binary, sorted({a for _, sample in raw_samples for a in sample}))
 
     lookups = set()
     trimmed_samples = []
-    for sample in raw_samples:
+    for weight, sample in raw_samples:
         start = 0
         for position, address in enumerate(sample):
             if any(function == SIGNAL_TRAMPOLINE for function, _ in probe.get(address, [])):
@@ -119,11 +120,11 @@ def load_stacks(samples_path, binary):
         # addresses, which point just past the call -- step back into it.
         adjusted = [frames[0]] + [address - 1 for address in frames[1:]]
         lookups.update(adjusted)
-        trimmed_samples.append(adjusted)
+        trimmed_samples.append((weight, adjusted))
 
     symbols = symbolize(binary, sorted(lookups))
     stacks = collections.Counter()
-    for sample in trimmed_samples:
+    for weight, sample in trimmed_samples:
         stack = []
         for address in sample:  # innermost first; inlined frames are innermost first too
             for function, source_file in symbols.get(address, [("??", "??")]):
@@ -134,7 +135,7 @@ def load_stacks(samples_path, binary):
             if function == "main":
                 stack = stack[position:]
                 break
-        stacks[tuple(stack)] += 1
+        stacks[tuple(stack)] += weight
     return stacks
 
 

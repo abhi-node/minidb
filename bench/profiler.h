@@ -8,11 +8,12 @@
  *
  * A wall-clock timer interrupts the process about 1000 times a second and
  * the signal handler records the call stack. profiler_stop() writes the raw
- * samples -- one line of return addresses per sample, innermost first --
- * which scripts/flamegraph.py turns into a flamegraph.
+ * samples -- one line per sample: a weight, then return addresses, innermost
+ * first -- which scripts/flamegraph.py turns into a flamegraph.
  *
  * It samples on wall-clock time, not CPU time, so time spent blocked in
- * fsync() shows up in proportion. `perf record -g` gives the same picture
+ * fsync() shows up in proportion (a sample's weight counts the timer periods
+ * that elapsed while a system call held the signal back). `perf record -g` gives the same picture
  * with kernel frames included, where perf is available.
  */
 
