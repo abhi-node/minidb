@@ -16,6 +16,10 @@ add_library(minidb_core
     lexer/lexer.c
     parser/parser.c
     expression/expression.c
+    operator/scan.c
+    operator/filter.c
+    operator/project.c
+    operator/limit.c
 )
 
 add_executable(minidb main.c)
