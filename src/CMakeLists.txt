@@ -13,6 +13,7 @@ add_library(minidb_core
     catalog/catalog.c
     storage/storage.c
     storage/recovery.c
+    lexer/lexer.c
 )
 
 add_executable(minidb main.c)
