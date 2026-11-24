@@ -6,3 +6,4 @@ function(minidb_add_test module)
 endfunction()
 
 minidb_add_test(row)
+minidb_add_test(pager)
